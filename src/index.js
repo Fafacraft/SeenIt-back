@@ -1,144 +1,58 @@
 import express from "express";
 import cors from "cors";
-import fs from 'fs';
+import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
-import dotenv from "dotenv";
+
+import { connectDB } from "./db.js";
+import User from "./models/User.js";
 
 dotenv.config();
+connectDB();
 
-// Lire le fichier JSON
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const pokemonsList = JSON.parse(fs.readFileSync(path.join(__dirname, './data/pokemons.json'), 'utf8'));
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
-// Middleware pour CORS
-app.use(cors())
-
-// Middleware pour parser le JSON
+// Middleware
+app.use(cors());
 app.use(express.json());
-
-// Middleware pour servir des fichiers statiques
-// 'app.use' est utilisé pour ajouter un middleware à notre application Express
-// '/assets' est le chemin virtuel où les fichiers seront accessibles
-// 'express.static' est un middleware qui sert des fichiers statiques
-// 'path.join(__dirname, '../assets')' construit le chemin absolu vers le dossier 'assets'
 app.use("/assets", express.static(path.join(__dirname, "../assets")));
 
-// Route GET de base
-app.get("/api/pokemons", (req, res) => {
-  res.status(200).send({
-    types: [
-      "fire",
-      "water",
-      "grass",
-      "electric",
-      "ice",
-      "fighting",
-      "poison",
-      "ground",
-      "flying",
-      "psychic",
-      "bug",
-      "rock",
-      "ghost",
-      "dragon",
-      "dark",
-      "steel",
-      "fairy",
-    ],
-    pokemons: pokemonsList,
-  });
-});
-
-const getPokemonById = (id) => {
-  return pokemonsList.find((pokemon) => {
-    return pokemon.id === parseInt(id)
-  })
-}
-
-const pokemonNotFound = (res) => {
-  return res.status(404).send({
-    message: "pokemon non trouvé",
-  });
-}
-
-const writePokemonsList = (newPokemonsList) => {
-  fs.writeFileSync(path.join(__dirname, './data/pokemons.json'), JSON.stringify(newPokemonsList, null, 2))
-}
-
-app.get("/api/pokemons/:id", (req, res) => {
-  const id = req.params.id;
-  console.log(id);
-  const pokemon = getPokemonById(id)
-
-  if (!pokemon) {
-    return pokemonNotFound(res)
-  }
-
-  return res.status(200).send({
-    pokemon,
-    message: "pokemon trouvé",
-  });
-});
-
-app.delete("/api/pokemons/:id", (req, res) => {
-  const id = req.params.id;
-  const pokemon = getPokemonById(id)
-  if (!pokemon) {
-      return pokemonNotFound(res)
-  }
-  const pokemonListWithoutSelectedPokemon = pokemonsList.filter((pokemon) => {
-    return pokemon.id !== parseInt(id)
-  })
-  writePokemonsList(pokemonListWithoutSelectedPokemon)
-
-  res.status(200).send({
-    message: "pokemon supprimé",
-  });
-})
-
-app.put("/api/pokemons/:id", (req, res) => {
-  const id = req.params.id;
-  console.log(req.params)
-  const pokemon = getPokemonById(id)
-  if (!pokemon) {
-    return pokemonNotFound(res)
-  }
-  const indexOfPokemon = pokemonsList.indexOf(pokemon)
-  
-  pokemonsList.splice(indexOfPokemon, 1, req.body)
-  
-  writePokemonsList(pokemonsList)
-
-  res.status(200).send({
-    pokemon: pokemonsList[indexOfPokemon],
-    message: "pokemon modifié",
-  });
-})
-
-app.post("/api/pokemons", (req, res) => {
-  const newPokemon = req.body
-  const pokemon = getPokemonById(newPokemon.id)
-  if (pokemon) {
-    return res.status(400).send({
-      message: "pokemon déjà existant",
-    });
-  }
-  pokemonsList.push(newPokemon)
-  writePokemonsList(pokemonsList)
-  res.status(201).send({
-    pokemon: newPokemon,
-  });
-})
 app.get("/", (req, res) => {
-  res.send("bienvenue sur l'API Pokémon");
+  res.send("Bienvenue sur l'API SeenIt");
 });
 
-// Démarrage du serveur
+// ROUTE: Create user
+app.post("/api/user", async (req, res) => {
+  const { pseudo, email, password } = req.body;
+
+  if (!pseudo || !email || !password) {
+    return res.status(400).json({ message: "Missing fields" });
+  }
+
+  try {
+    // check if user exist
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(409).json({ message: "Email already taken" });
+    }
+    
+    // create user
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const newUser = new User({ pseudo, email, password: hashedPassword });
+    await newUser.save();
+
+    res.status(201).json({ message: "User successfully created", userId: newUser._id });
+  } catch (err) {
+    console.error("User creation error :", err);
+    res.status(500).json({ message: "Server Error" });
+  }
+});
+
+// Start the server
 app.listen(PORT, () => {
-  console.log(`Serveur démarré sur http://localhost:${PORT}`);
+  console.log(`🚀 Serveur démarré sur http://localhost:${PORT}`);
 });

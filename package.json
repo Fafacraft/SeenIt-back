@@ -1,18 +1,18 @@
 {
-  "name": "pokemon-api-workshop",
+  "name": "seenit-api",
   "version": "1.0.0",
-  "description": "Atelier API REST pour étudiants en cybersécurité",
+  "description": "API pour la webapp SeenIt",
   "type": "module",
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
-    "dev": "nodemon src/index.js",
-    "generate-pokemons": "node src/data/generatePokemonsJson.js"
+    "dev": "nodemon src/index.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
-    "express": "^4.18.2"
+    "express": "^4.21.2",
+    "mongoose": "^8.14.3"
   },
   "devDependencies": {
     "nodemon": "^2.0.22"
