@@ -6,6 +6,7 @@ import { fileURLToPath } from "url";
 
 import { connectDB } from "./db.js";
 import User from "./models/User.js";
+import bcrypt from "bcrypt";
 
 dotenv.config();
 connectDB();
