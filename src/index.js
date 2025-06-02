@@ -7,6 +7,9 @@ import { fileURLToPath } from "url";
 import { connectDB } from "./db.js";
 import User from "./models/User.js";
 import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+
+import { getUserCollection } from "./db.js";
 
 dotenv.config();
 connectDB();
@@ -37,8 +40,11 @@ app.post("/api/user", async (req, res) => {
   try {
     // check if user exist
     const existingUser = await User.findOne({ email });
+    const existingUserPseudo = await User.findOne({ pseudo });
     if (existingUser) {
       return res.status(409).json({ message: "Email already taken" });
+    } else if (existingUserPseudo) {
+      return res.status(409).json({ message : "Pseudo already taken" });
     }
     
     // create user
@@ -51,6 +57,43 @@ app.post("/api/user", async (req, res) => {
     console.error("User creation error :", err);
     res.status(500).json({ message: "Server Error" });
   }
+});
+
+app.post("/api/login", async (req, res) => {
+  const { login, password } = req.body;
+
+  if (!login || !password) {
+    return res.status(409).json({ message: "Login and password are required." });
+  }
+
+  const users = await getUserCollection();
+  const user = await users.findOne({
+    $or: [
+      { email: login },
+      { pseudo: login }
+    ]
+  });
+
+  if (!user) {
+    return res.status(409).json({ message: "User not found." });
+  }
+
+  const isPasswordValid = await bcrypt.compare(password, user.password);
+  if (!isPasswordValid) {
+    return res.status(409).json({ message: "Invalid password." });
+  }
+
+  const sessionToken = jwt.sign(
+    {
+      uid: user._id,
+      pseudo: user.pseudo,
+      email: user.email
+    },
+    process.env.JWT_SECRET,
+    { expiresIn: "7d" }
+  );
+
+  res.status(200).json({ token: sessionToken });
 });
 
 // Start the server
