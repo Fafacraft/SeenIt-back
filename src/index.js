@@ -96,6 +96,24 @@ app.post("/api/login", async (req, res) => {
   res.status(200).json({ token: sessionToken });
 });
 
+app.get("/api/verify", async (req, res) => {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ message: "Missing or invalid token." });
+  }
+
+  const token = authHeader.split(" ")[1];
+
+  try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET); 
+      req.user = decoded; // Save decoded user info for use in route
+      return res.status(200).json({ user: decoded });
+  } catch (err) {
+      return res.status(401).json({ message: "Invalid or expired token." });
+  }
+})
+
 // Start the server
 app.listen(PORT, () => {
   console.log(`🚀 Serveur démarré sur http://localhost:${PORT}`);
