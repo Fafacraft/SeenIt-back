@@ -116,7 +116,7 @@ app.get("/api/verify", async (req, res) => {
   }
 })
 
-app.post("/api/watchlist/toggle", async (req, res) => {
+app.post("/api/showuserlist/update", async (req, res) => {
   const authHeader = req.headers.authorization;
 
   if (!authHeader) return res.status(401).send("No token provided");
@@ -139,7 +139,7 @@ app.post("/api/watchlist/toggle", async (req, res) => {
   }
 });
 
-app.get("/api/watchlist/check", async (req, res) => {
+app.get("/api/showuserlist/check", async (req, res) => {
   const authHeader = req.headers.authorization;
 
   if (!authHeader) return res.status(401).send("No token provided");
@@ -149,7 +149,15 @@ app.get("/api/watchlist/check", async (req, res) => {
   const { showId } = req.query;
 
   const exists = await showUserList.findOne({ userId: userId, "show.showId": showId });
-  return res.status(200).json({watchList : exists ? exists.watchList : false});
+  if (!exists) {
+    return res.status(200).json(null);
+  }
+
+  return res.status(200).json({
+    watchList: exists.watchList,
+    episode: exists.episode,
+    season: exists.season,
+  });
 });
 
 app.get("/api/watchlist", async (req, res) => {
