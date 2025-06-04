@@ -122,7 +122,7 @@ app.post("/api/showuserlist/update", async (req, res) => {
   if (!authHeader) return res.status(401).send("No token provided");
   const token = authHeader.split(" ")[1];
   var decoded;
-  
+
   try {
     decoded = jwt.verify(token, process.env.JWT_SECRET);
   } catch (err) {
@@ -169,7 +169,7 @@ app.get("/api/watchlist", async (req, res) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const userId = decoded.uid;
 
-    const list = await showUserList.find({ userId, watchList: true }).sort({ updatedAt: -1});
+    const list = await showUserList.find({ userId, watchList: true }).sort({ updatedAt: -1 });
     return res.status(200).json(list);
   } catch (err) {
     console.error("Failed to get watchlist:", err);
@@ -177,7 +177,30 @@ app.get("/api/watchlist", async (req, res) => {
   }
 });
 
+app.get("/api/startedShows", async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) return res.status(401).send("No token provided");
 
+    const token = authHeader.split(" ")[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const userId = decoded.uid;
+
+    // Find shows with episode > 1 OR season > 1 for that user
+    const startedShows = await showUserList.find({
+      userId,
+      $or: [
+        { episode: { $gt: 1 } },
+        { season: { $gt: 1 } },
+      ],
+    });
+
+    res.status(200).json(startedShows);
+  } catch (err) {
+    console.error("Error fetching started shows:", err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
 
 
 // Start the server
