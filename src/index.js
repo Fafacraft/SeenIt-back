@@ -10,6 +10,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 
 import { getUserCollection } from "./db.js";
+import WatchList from "./models/WatchList.js";
 
 dotenv.config();
 connectDB();
@@ -111,6 +112,47 @@ app.get("/api/verify", async (req, res) => {
       return res.status(200).json({ user: decoded });
   } catch (err) {
       return res.status(401).json({ message: "Invalid or expired token." });
+  }
+})
+
+app.post("/api/watchlistToggle", async (req, res) => {
+    const authHeader = req.headers.authorization;
+
+  if (!authHeader) return res.status(401).send("No token provided");
+  const token = authHeader.split(" ")[1];
+
+  const {showId, name, year, type, poster_link, episode, season} = req.body;
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const userId = decoded.uid;
+
+    // Try to find existing entry
+    const existing = await WatchList.findOne({ userId, showId });
+
+    if (existing) {
+      // Exists -> Remove
+      await WatchList.deleteOne({ _id: existing._id });
+      return res.status(200).json({ message: "Removed from watchlist" });
+    } else {
+      // Not found -> Add
+      const newEntry = new WatchList({
+        userId,
+        showId,
+        name,
+        year,
+        type,
+        poster_link,
+        episode,
+        season,
+      });
+
+      await newEntry.save();
+      return res.status(201).json({ message: "Added to watchlist" });
+    }
+  } catch (err) {
+    console.error("Watchlist toggle error:", err);
+    res.status(500).json({ error: "Server error" });
   }
 })
 

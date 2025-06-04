@@ -26,4 +26,10 @@ async function getUserCollection() {
   return db.collection("users");
 }
 
-export {getUserCollection};
+async function getWatchListCollection() {
+  if (!client.isConnected) await client.connect();
+  const db = client.db("SeenIt");
+  return db.collection("watchList");
+}
+
+export {getUserCollection, getWatchListCollection};
