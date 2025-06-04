@@ -45,9 +45,9 @@ app.post("/api/user", async (req, res) => {
     if (existingUser) {
       return res.status(409).json({ message: "Email already taken" });
     } else if (existingUserPseudo) {
-      return res.status(409).json({ message : "Pseudo already taken" });
+      return res.status(409).json({ message: "Pseudo already taken" });
     }
-    
+
     // create user
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = new User({ pseudo, email, password: hashedPassword });
@@ -101,32 +101,31 @@ app.get("/api/verify", async (req, res) => {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return res.status(401).json({ message: "Missing or invalid token." });
+    return res.status(401).json({ message: "Missing or invalid token." });
   }
 
   const token = authHeader.split(" ")[1];
 
   try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET); 
-      req.user = decoded; // Save decoded user info for use in route
-      return res.status(200).json({ user: decoded });
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded; // Save decoded user info for use in route
+    return res.status(200).json({ user: decoded });
   } catch (err) {
-      return res.status(401).json({ message: "Invalid or expired token." });
+    return res.status(401).json({ message: "Invalid or expired token." });
   }
 })
 
 app.post("/api/watchlistToggle", async (req, res) => {
-    const authHeader = req.headers.authorization;
+  const authHeader = req.headers.authorization;
 
   if (!authHeader) return res.status(401).send("No token provided");
   const token = authHeader.split(" ")[1];
+  const decoded = jwt.verify(token, process.env.JWT_SECRET);
+  const userId = decoded.uid;
 
-  const {showId, name, year, type, poster_link, episode, season} = req.body;
+  const { showId, name, year, type, poster_link, episode, season } = req.body;
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const userId = decoded.uid;
-
     // Try to find existing entry
     const existing = await WatchList.findOne({ userId, showId });
 
@@ -155,6 +154,20 @@ app.post("/api/watchlistToggle", async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 })
+
+app.get("/api/watchlist/check", async (req, res) => {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader) return res.status(401).send("No token provided");
+  const token = authHeader.split(" ")[1];
+  const decoded = jwt.verify(token, process.env.JWT_SECRET);
+  const userId = decoded.uid;
+  const { showId } = req.query;
+
+  const exists = await WatchList.findOne({ userId: userId, showId });
+  return res.status(200).json({inWatchlist : !!exists});
+});
+
 
 // Start the server
 app.listen(PORT, () => {
