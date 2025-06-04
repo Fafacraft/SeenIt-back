@@ -168,6 +168,26 @@ app.get("/api/watchlist/check", async (req, res) => {
   return res.status(200).json({inWatchlist : !!exists});
 });
 
+app.get("/api/watchlist", async (req, res) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) return res.status(401).json({ message: "No token provided" });
+
+  const token = authHeader.split(" ")[1];
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const userId = decoded.uid;
+
+    const userWatchlist = await WatchList.find({ userId }); // Get all entries for this user
+
+    res.status(200).json(userWatchlist); // send them as JSON
+  } catch (err) {
+    console.error("Failed to fetch watchlist:", err);
+    res.status(403).json({ message: "Invalid token" });
+  }
+});
+
+
 
 // Start the server
 app.listen(PORT, () => {
