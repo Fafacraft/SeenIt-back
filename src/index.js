@@ -193,6 +193,7 @@ app.get("/api/startedShows", async (req, res) => {
         { episode: { $gt: 1 } },
         { season: { $gt: 1 } },
       ],
+      done: false,
     });
 
     res.status(200).json(startedShows);

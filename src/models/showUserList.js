@@ -12,6 +12,7 @@ const showUserList = new mongoose.Schema({
   episode: { type: String, required: false, default: "1" },
   season: { type: String, required: false, default: "1" },
   watchList: { type: Boolean, required: true, default: false },
+  done: {type: Boolean, required: true, default: false },
 }, { timestamps: true });
 
 export default mongoose.model("showUserList", showUserList);

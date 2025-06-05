@@ -2,7 +2,7 @@ import showUserList from "./models/showUserList.js";
 
 async function addshowUserList(req, res) {
   try {
-    const { userId, show, season, episode, watchList } = req.body;
+    const { userId, show, season, episode, watchList, done } = req.body;
     const { showId, name, year, type, poster_link } = show;
 
     // Try to find existing entry
@@ -14,6 +14,7 @@ async function addshowUserList(req, res) {
       existing.season = season;
       existing.episode = episode;
       existing.watchList = watchList;
+      existing.done = done;
 
       await existing.save();
       return res.status(200).json({ message: "Watchlist entry updated", updated: true });
@@ -24,7 +25,8 @@ async function addshowUserList(req, res) {
         show,
         season,
         episode,
-        watchList
+        watchList,
+        done,
       });
 
       await newEntry.save();
