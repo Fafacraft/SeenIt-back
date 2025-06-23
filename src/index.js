@@ -177,6 +177,27 @@ app.get("/api/watchlist", async (req, res) => {
   }
 });
 
+app.get("/api/watched", async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) return res.status(401).send("No token provided");
+
+    const token = authHeader.split(" ")[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const userId = decoded.uid;
+
+    const watchedShows = await showUserList.find({
+      userId,
+      done: true,
+    }).sort({ updatedAt: -1 });
+
+    res.status(200).json(watchedShows);
+  } catch (err) {
+    console.error("Error fetching watched shows:", err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
 app.get("/api/startedShows", async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
@@ -194,7 +215,7 @@ app.get("/api/startedShows", async (req, res) => {
         { season: { $gt: 1 } },
       ],
       done: false,
-    });
+    }).sort({ updatedAt: -1 });
 
     res.status(200).json(startedShows);
   } catch (err) {
@@ -202,6 +223,7 @@ app.get("/api/startedShows", async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
+
 
 
 // Start the server
