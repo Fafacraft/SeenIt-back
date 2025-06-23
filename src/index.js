@@ -157,6 +157,7 @@ app.get("/api/showuserlist/check", async (req, res) => {
     watchList: exists.watchList,
     episode: exists.episode,
     season: exists.season,
+    done: exists.done,
   });
 });
 
