@@ -178,6 +178,25 @@ app.get("/api/watchlist", async (req, res) => {
   }
 });
 
+app.get("/api/user", async (req, res) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) return res.status(401).send("No token provided");
+
+  try {
+    const token = authHeader.split(" ")[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const userId = decoded.uid;
+
+    const user = await User.findById(userId).select("-password");;
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    return res.status(200).json(user);
+  } catch (err) {
+    console.error("Failed to get user:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
 app.get("/api/watched", async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
