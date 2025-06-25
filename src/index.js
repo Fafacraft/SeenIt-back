@@ -13,11 +13,17 @@ import { getUserCollection } from "./db.js";
 import showUserList from "./models/showUserList.js";
 import addshowUserList from "./util.js";
 
+import AdminJS from "adminjs";
+import AdminJSExpress from "@adminjs/express";
+import * as AdminJSMongoose from "@adminjs/mongoose";
+
 dotenv.config();
 connectDB();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+AdminJS.registerAdapter(AdminJSMongoose);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -26,6 +32,44 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 app.use("/assets", express.static(path.join(__dirname, "../assets")));
+
+// Configuration d'AdminJS
+const adminJs = new AdminJS({
+  resources: [
+    { resource: User },
+    { resource: showUserList },
+  ],
+  rootPath: "/admin",
+});
+
+// Utilisateur admin en dur (à sécuriser avec une variable d'environnement plus tard)
+const ADMIN = {
+  email: "admin",
+  password: "admin", // À sécuriser en prod
+};
+
+// Création du router protégé par login/mot de passe
+const adminRouter = AdminJSExpress.buildAuthenticatedRouter(
+  adminJs,
+  {
+    authenticate: async (email, password) => {
+      if (email === ADMIN.email && password === ADMIN.password) {
+        return ADMIN;
+      }
+      return null;
+    },
+    cookieName: "adminjs",
+    cookiePassword: "cookie-secret-password", // à changer pour un vrai secret en prod
+  },
+  null,
+  {
+    resave: false,
+    saveUninitialized: true,
+  }
+);
+
+app.use(adminJs.options.rootPath, adminRouter);
+
 
 app.get("/", (req, res) => {
   res.send("Bienvenue sur l'API SeenIt");
